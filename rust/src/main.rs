@@ -13,6 +13,8 @@ use tokio::{
 
 // A lot of this shamelessly stolen from https://github.com/LucasPickering/protohackers
 
+// TODO: read problem from env vars?
+
 /// TCP server for Protohackers
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

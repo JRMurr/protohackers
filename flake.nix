@@ -22,6 +22,10 @@
         rustAttrs = import ./rust { inherit pkgs gitignore; };
       in with pkgs; {
         defaultPackage = rustAttrs.proto-rust;
+        packages = {
+          rust-bin = rustAttrs.proto-rust;
+          rust-docker = rustAttrs.proto-rust-docker;
+        };
         devShell = mkShell {
           buildInputs = [
             rustAttrs.rust-shell
@@ -30,6 +34,8 @@
             watchexec
 
             nixfmt
+
+            just
           ];
         };
       });
