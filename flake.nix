@@ -19,27 +19,12 @@
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
-        rustVersion =
-          (pkgs.rust-bin.fromRustupToolchainFile ./rust/rust-toolchain.toml);
-
-        rustPlatform = pkgs.makeRustPlatform {
-          cargo = rustVersion;
-          rustc = rustVersion;
-        };
-        proto-rust = rustPlatform.buildRustPackage {
-          pname = "bang";
-          version = "0.1.0";
-          src = gitignore.lib.gitignoreSource ./.;
-          cargoLock.lockFile = ./Cargo.lock;
-        };
-
+        rustAttrs = import ./rust { inherit pkgs gitignore; };
       in with pkgs; {
-        defaultPackage = proto-rust;
+        defaultPackage = rustAttrs.proto-rust;
         devShell = mkShell {
           buildInputs = [
-            (rustVersion.override {
-              extensions = [ "rust-src" "rust-analyzer" ];
-            })
+            rustAttrs.rust-shell
             cargo-expand
             # common
             watchexec
