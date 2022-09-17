@@ -13,14 +13,12 @@ use tokio::{
 
 // A lot of this shamelessly stolen from https://github.com/LucasPickering/protohackers
 
-// TODO: read problem from env vars?
-
 /// TCP server for Protohackers
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Number of the problem whose server should be executed
-    #[clap(value_parser)]
+    #[clap(value_parser, env)]
     problem: u8,
 
     /// IP/hostname to bind to

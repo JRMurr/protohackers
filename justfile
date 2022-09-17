@@ -1,6 +1,9 @@
+set shell := ["bash", "-uc"]
+set positional-arguments
+
+
 default:
   just --list
-
 
 build:
     ./buildRustImage.sh
@@ -11,3 +14,11 @@ deploy:
 buildDeploy:
     just build
     just deploy
+
+
+@deployProb problem_num:
+    flyctl deploy --image proto-rust:latest --local-only --strategy immediate --env PROBLEM=$1
+
+
+@buildDeployProb problem_num:
+    echo $1
