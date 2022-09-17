@@ -1,6 +1,7 @@
 mod problem0;
+mod problem1;
 
-use crate::problem0::EchoServer;
+use crate::{problem0::EchoServer, problem1::PrimeTime};
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use clap::Parser;
@@ -34,6 +35,7 @@ impl Args {
     fn get_server(&self) -> anyhow::Result<Box<dyn ProtoServer>> {
         match self.problem {
             0 => Ok(Box::new(EchoServer)),
+            1 => Ok(Box::new(PrimeTime)),
             problem => Err(anyhow!("Unknown problem: {}", problem)),
         }
     }

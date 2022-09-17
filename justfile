@@ -21,4 +21,5 @@ buildDeploy:
 
 
 @buildDeployProb problem_num:
-    echo $1
+    just build
+    just deploy $1
