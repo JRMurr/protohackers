@@ -22,4 +22,4 @@ buildDeploy:
 
 @buildDeployProb problem_num:
     just build
-    just deploy $1
+    just deployProb $1

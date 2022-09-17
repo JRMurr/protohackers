@@ -1,5 +1,6 @@
 use crate::ProtoServer;
 use async_trait::async_trait;
+use log::info;
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 
@@ -31,25 +32,37 @@ impl ProtoServer for PrimeTime {
     async fn run_server(&self, mut socket: TcpStream) -> anyhow::Result<()> {
         let mut buf = [0; 1024];
         loop {
-            // TODO: read until new line/ASCII 10?
             let bytes = self.read(&mut socket, &mut buf).await?;
 
-            let req: Request = match serde_json::from_slice(bytes) {
-                Ok(v) => v,
-                Err(_) => return self.write(&mut socket, bytes).await,
-            };
+            for line in bytes.split(|&b| b == 10) {
+                // TODO: split gives an empty line at the end since it ends with
+                // a newline might need to check this is the
+                // last elem of the iter but nbd for now
 
-            let prime = is_prime_float(req.number);
+                if line.is_empty() {
+                    continue;
+                }
 
-            let response = Response {
-                method: Method::IsPrime,
-                prime,
-            };
+                let req: Request = match serde_json::from_slice(line) {
+                    Ok(v) => v,
+                    Err(_) => {
+                        info!("invalid bytes: {:?}", line);
+                        return self.write(&mut socket, line).await;
+                    }
+                };
 
-            let output_bytes = serde_json::to_vec(&response)?;
-            self.write(&mut socket, &output_bytes).await?;
-            // Responses are always newline-terminated
-            self.write(&mut socket, "\n".as_bytes()).await?;
+                let prime = is_prime_float(req.number);
+
+                let response = Response {
+                    method: Method::IsPrime,
+                    prime,
+                };
+
+                let output_bytes = serde_json::to_vec(&response)?;
+                self.write(&mut socket, &output_bytes).await?;
+                // Responses are always newline-terminated
+                self.write(&mut socket, "\n".as_bytes()).await?;
+            }
         }
     }
 }

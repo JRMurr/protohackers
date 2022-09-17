@@ -8,7 +8,7 @@ let
   };
   name = "proto-rust";
   version = "0.1.0";
-  problem = 0;
+  problem = 1;
   rustBin = rustPlatform.buildRustPackage {
     pname = name;
     version = version;
