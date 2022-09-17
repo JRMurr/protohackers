@@ -1,4 +1,4 @@
-use crate::ProtoServer;
+use crate::{read_util, write_util, ProtoServer};
 use async_trait::async_trait;
 use tokio::net::TcpStream;
 
@@ -12,8 +12,8 @@ impl ProtoServer for EchoServer {
         let mut buf = [0; 1024];
         // Read until the client closes the socket
         loop {
-            let bytes = self.read(&mut socket, &mut buf).await?;
-            self.write(&mut socket, bytes).await?;
+            let bytes = read_util(&mut socket, &mut buf).await?;
+            write_util(&mut socket, bytes).await?;
         }
     }
 }

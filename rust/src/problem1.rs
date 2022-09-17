@@ -1,4 +1,4 @@
-use crate::ProtoServer;
+use crate::{read_util, write_util, ProtoServer};
 use async_trait::async_trait;
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -31,8 +31,11 @@ struct Response {
 impl ProtoServer for PrimeTime {
     async fn run_server(&self, mut socket: TcpStream) -> anyhow::Result<()> {
         let mut buf = [0; 1024];
+
+        let (reader, writer) = socket.split();
+
         loop {
-            let bytes = self.read(&mut socket, &mut buf).await?;
+            let bytes = read_util(&mut socket, &mut buf).await?;
 
             for line in bytes.split(|&b| b == 10) {
                 // TODO: split gives an empty line at the end since it ends with
@@ -47,7 +50,7 @@ impl ProtoServer for PrimeTime {
                     Ok(v) => v,
                     Err(_) => {
                         info!("invalid bytes: {:?}", line);
-                        return self.write(&mut socket, line).await;
+                        return write_util(&mut socket, line).await;
                     }
                 };
 
@@ -59,9 +62,9 @@ impl ProtoServer for PrimeTime {
                 };
 
                 let output_bytes = serde_json::to_vec(&response)?;
-                self.write(&mut socket, &output_bytes).await?;
+                write_util(&mut socket, &output_bytes).await?;
                 // Responses are always newline-terminated
-                self.write(&mut socket, "\n".as_bytes()).await?;
+                write_util(&mut socket, "\n".as_bytes()).await?;
             }
         }
     }

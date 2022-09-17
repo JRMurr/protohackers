@@ -5,6 +5,7 @@ use crate::{problem0::EchoServer, problem1::PrimeTime};
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 use env_logger::{Env, Target};
 use log::{error, info};
 use tokio::{
@@ -13,6 +14,12 @@ use tokio::{
 };
 
 // A lot of this shamelessly stolen from https://github.com/LucasPickering/protohackers
+
+#[enum_dispatch(ProtoServer)]
+enum Server {
+    EchoServer,
+    PrimeTime,
+}
 
 /// TCP server for Protohackers
 #[derive(Parser, Debug)]
@@ -32,45 +39,44 @@ struct Args {
 }
 
 impl Args {
-    fn get_server(&self) -> anyhow::Result<Box<dyn ProtoServer>> {
+    fn get_server(&self) -> anyhow::Result<Server> {
         match self.problem {
-            0 => Ok(Box::new(EchoServer)),
-            1 => Ok(Box::new(PrimeTime)),
+            0 => Ok(EchoServer.into()),
+            1 => Ok(PrimeTime.into()),
             problem => Err(anyhow!("Unknown problem: {}", problem)),
         }
     }
 }
 
+async fn read_util<'a, T: AsyncReadExt + std::marker::Unpin>(
+    socket: &mut T,
+    buffer: &'a mut [u8],
+) -> anyhow::Result<&'a [u8]> {
+    let bytes_read = socket
+        .read(buffer)
+        .await
+        .context("Error reading from socket")?;
+    if bytes_read == 0 {
+        Err(anyhow!("Socket closed"))
+    } else {
+        Ok(&buffer[0..bytes_read])
+    }
+}
+
+async fn write_util<T: AsyncWriteExt + std::marker::Unpin>(
+    socket: &mut T,
+    bytes: &[u8],
+) -> anyhow::Result<()> {
+    socket
+        .write_all(bytes)
+        .await
+        .context("Error writing to socket")
+}
+
 #[async_trait]
+#[enum_dispatch]
 trait ProtoServer: Send + Sync {
     async fn run_server(&self, socket: TcpStream) -> anyhow::Result<()>;
-
-    async fn read<'a>(
-        &self,
-        socket: &mut TcpStream,
-        buffer: &'a mut [u8],
-    ) -> anyhow::Result<&'a [u8]> {
-        let bytes_read = socket
-            .read(buffer)
-            .await
-            .context("Error reading from socket")?;
-        if bytes_read == 0 {
-            Err(anyhow!("Socket closed"))
-        } else {
-            Ok(&buffer[0..bytes_read])
-        }
-    }
-
-    async fn write(
-        &self,
-        socket: &mut TcpStream,
-        bytes: &[u8],
-    ) -> anyhow::Result<()> {
-        socket
-            .write_all(bytes)
-            .await
-            .context("Error writing to socket")
-    }
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 5)]
