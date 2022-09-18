@@ -1,7 +1,10 @@
-mod problem0;
-mod problem1;
+mod problem00;
+mod problem01;
+mod problem02;
 
-use crate::{problem0::EchoServer, problem1::PrimeTime};
+use crate::{
+    problem00::EchoServer, problem01::PrimeTime, problem02::MeansToAnEnd,
+};
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use clap::Parser;
@@ -19,6 +22,7 @@ use tokio::{
 enum Server {
     EchoServer,
     PrimeTime,
+    MeansToAnEnd,
 }
 
 /// TCP server for Protohackers
@@ -43,6 +47,7 @@ impl Args {
         match self.problem {
             0 => Ok(EchoServer.into()),
             1 => Ok(PrimeTime.into()),
+            2 => Ok(MeansToAnEnd.into()),
             problem => Err(anyhow!("Unknown problem: {}", problem)),
         }
     }
