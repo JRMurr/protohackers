@@ -30,7 +30,7 @@ struct Args {
     problem: u8,
 
     /// IP/hostname to bind to
-    #[clap(long, value_parser, default_value = "127.0.0.1")]
+    #[clap(long, value_parser, default_value = "0.0.0.0")]
     host: String,
 
     /// Port number to host on
