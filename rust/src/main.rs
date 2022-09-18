@@ -34,7 +34,7 @@ struct Args {
     host: String,
 
     /// Port number to host on
-    #[clap(short, long, value_parser, default_value_t = 8000)]
+    #[clap(short, long, value_parser, default_value_t = 8050)]
     port: u16,
 }
 
