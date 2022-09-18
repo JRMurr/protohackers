@@ -1,8 +1,11 @@
-use crate::{read_util, write_util, ProtoServer};
+use crate::{write_util, ProtoServer};
 use async_trait::async_trait;
 use log::info;
 use serde::{Deserialize, Serialize};
-use tokio::net::TcpStream;
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    net::TcpStream,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Method {
@@ -30,42 +33,38 @@ struct Response {
 #[async_trait]
 impl ProtoServer for PrimeTime {
     async fn run_server(&self, mut socket: TcpStream) -> anyhow::Result<()> {
-        let mut buf = [0; 1024];
+        let (reader, mut writer) = socket.split();
 
-        let (reader, writer) = socket.split();
-
+        let mut buf_reader = BufReader::new(reader);
         loop {
-            let bytes = read_util(&mut socket, &mut buf).await?;
+            // let bytes = read_util(&mut socket, &mut buf).await?;
+            let mut buf = String::new();
+            let data_read = buf_reader.read_line(&mut buf).await?;
 
-            for line in bytes.split(|&b| b == 10) {
-                // TODO: split gives an empty line at the end since it ends with
-                // a newline might need to check this is the
-                // last elem of the iter but nbd for now
-
-                if line.is_empty() {
-                    continue;
-                }
-
-                let req: Request = match serde_json::from_slice(line) {
-                    Ok(v) => v,
-                    Err(_) => {
-                        info!("invalid bytes: {:?}", line);
-                        return write_util(&mut socket, line).await;
-                    }
-                };
-
-                let prime = is_prime_float(req.number);
-
-                let response = Response {
-                    method: Method::IsPrime,
-                    prime,
-                };
-
-                let output_bytes = serde_json::to_vec(&response)?;
-                write_util(&mut socket, &output_bytes).await?;
-                // Responses are always newline-terminated
-                write_util(&mut socket, "\n".as_bytes()).await?;
+            if data_read == 0 {
+                // done with client
+                return Ok(());
             }
+
+            let req: Request = match serde_json::from_str(&buf) {
+                Ok(v) => v,
+                Err(_) => {
+                    info!("invalid bytes: {:?}", buf);
+                    return write_util(&mut socket, buf.as_bytes()).await;
+                }
+            };
+
+            let prime = is_prime_float(req.number);
+
+            let response = Response {
+                method: Method::IsPrime,
+                prime,
+            };
+
+            let output_bytes = serde_json::to_vec(&response)?;
+            write_util(&mut writer, &output_bytes).await?;
+            // Responses are always newline-terminated
+            write_util(&mut writer, "\n".as_bytes()).await?;
         }
     }
 }
