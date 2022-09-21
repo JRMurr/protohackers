@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::{write_util, ProtoServer};
 use async_trait::async_trait;
 
+use rusqlite::Connection;
 use tokio::{
     io::{AsyncReadExt, BufReader},
     net::TcpStream,
@@ -45,32 +46,59 @@ fn parse_message(input: &[u8]) -> anyhow::Result<Message> {
     })
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 
-struct PriceData(BTreeMap<Timestamp, Price>);
+struct PriceData {
+    conn: Connection,
+}
 
 impl PriceData {
-    fn insert(&mut self, time: Timestamp, price: Price) -> Option<Price> {
-        self.0.insert(time, price)
+    fn new() -> anyhow::Result<Self> {
+        let conn = Connection::open_in_memory()?;
+
+        conn.execute(
+            "CREATE TABLE prices (
+                time   INTEGER,
+                price  INTEGER
+            )",
+            (),
+        )?;
+
+        Ok(Self { conn })
+    }
+
+    fn insert(
+        &mut self,
+        time: Timestamp,
+        price: Price,
+    ) -> anyhow::Result<usize> {
+        Ok(self.conn.execute(
+            "INSERT INTO prices (time, price) VALUES (?1, ?2)",
+            (&time.0, &price.0),
+        )?)
     }
 
     fn mean(&self, min: Timestamp, max: Timestamp) -> anyhow::Result<i32> {
-        use core::ops::Bound::Included;
-        if min > max {
-            return Ok(0);
-        }
+        let mut stmt = self.conn.prepare_cached(
+            "
+            SELECT avg(price)
+            FROM prices
+            WHERE
+                time >= :min AND time <= :max
+        ",
+        )?;
 
-        let (count, sum): (i64, i64) = self
-            .0
-            .range(((Included(min)), Included(max)))
-            .fold((0, 0), |(count, sum), (_, val)| {
-                (count + 1, sum + (val.0 as i64))
-            });
+        Ok(
+            stmt.query_row(&[(":min", &min.0), (":max", &max.0)], |row| {
+                Ok(match row.get_ref(0)? {
+                    rusqlite::types::ValueRef::Null => 0,
+                    rusqlite::types::ValueRef::Real(avg) => avg.round() as i32,
+                    _ => 0,
+                })
+            })?,
+        )
 
-        if count == 0 {
-            return Ok(0);
-        }
-        Ok((sum / count).try_into()?)
+        // Ok(avg.round() as i32)
     }
 }
 
@@ -85,7 +113,7 @@ impl ProtoServer for MeansToAnEnd {
 
         let mut buf_reader = BufReader::new(reader);
 
-        let mut session_data = PriceData::default();
+        let mut session_data = PriceData::new()?;
         loop {
             let mut buf = [0; 9];
             let data_read = buf_reader.read_exact(&mut buf).await?;
@@ -97,7 +125,7 @@ impl ProtoServer for MeansToAnEnd {
 
             match parse_message(&buf)? {
                 Message::Insert(time, price) => {
-                    session_data.insert(time, price);
+                    session_data.insert(time, price)?;
                 }
                 Message::Query { min, max } => {
                     let average = session_data.mean(min, max)?;
