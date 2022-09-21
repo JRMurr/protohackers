@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::{write_util, ProtoServer};
 use async_trait::async_trait;
 
@@ -97,8 +95,6 @@ impl PriceData {
                 })
             })?,
         )
-
-        // Ok(avg.round() as i32)
     }
 }
 

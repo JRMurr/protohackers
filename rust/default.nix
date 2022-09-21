@@ -14,6 +14,7 @@ let
     version = version;
     src = gitignore.lib.gitignoreSource ./.;
     cargoLock.lockFile = ./Cargo.lock;
+    nativeBuildInputs = [ pkgs.sqlite ];
   };
 in {
   rust-shell =

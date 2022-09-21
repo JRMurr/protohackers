@@ -27,6 +27,7 @@
           rust-docker = rustAttrs.proto-rust-docker;
         };
         devShell = mkShell {
+          nativeBuildInputs = [ sqlite ];
           buildInputs = [
             rustAttrs.rust-shell
             cargo-expand
