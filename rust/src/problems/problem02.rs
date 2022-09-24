@@ -1,4 +1,4 @@
-use crate::{write_util, StatelessServer};
+use crate::write_util;
 use async_trait::async_trait;
 
 use rusqlite::Connection;
@@ -6,6 +6,8 @@ use tokio::{
     io::{AsyncReadExt, BufReader},
     net::TcpStream,
 };
+
+use super::StatelessServer;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Timestamp(i32);

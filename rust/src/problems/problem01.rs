@@ -1,4 +1,4 @@
-use crate::{write_util, StatelessServer};
+use crate::write_util;
 use async_trait::async_trait;
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -6,6 +6,8 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
     net::TcpStream,
 };
+
+use super::StatelessServer;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Method {
