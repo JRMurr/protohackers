@@ -20,7 +20,7 @@ use tokio::{
 
 // A lot of this shamelessly stolen from https://github.com/LucasPickering/protohackers
 
-#[enum_dispatch(ProtoServer)]
+#[enum_dispatch(StatelessServer)]
 enum Server {
     EchoServer,
     PrimeTime,
@@ -82,9 +82,10 @@ async fn write_util<T: AsyncWriteExt + std::marker::Unpin>(
         .context("Error writing to socket")
 }
 
+/// A server whos clients do not need to share state with each other
 #[async_trait]
 #[enum_dispatch]
-trait ProtoServer: Send + Sync {
+trait StatelessServer: Send + Sync {
     async fn run_server(&self, socket: TcpStream) -> anyhow::Result<()>;
 }
 

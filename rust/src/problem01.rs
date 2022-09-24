@@ -1,4 +1,4 @@
-use crate::{write_util, ProtoServer};
+use crate::{write_util, StatelessServer};
 use async_trait::async_trait;
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,7 @@ struct Response {
 }
 
 #[async_trait]
-impl ProtoServer for PrimeTime {
+impl StatelessServer for PrimeTime {
     async fn run_server(&self, mut socket: TcpStream) -> anyhow::Result<()> {
         let (reader, mut writer) = socket.split();
 

@@ -1,4 +1,4 @@
-use crate::{read_util, write_util, ProtoServer};
+use crate::{read_util, write_util, StatelessServer};
 use async_trait::async_trait;
 use tokio::net::TcpStream;
 
@@ -7,7 +7,7 @@ use tokio::net::TcpStream;
 pub struct BudgetChat;
 
 #[async_trait]
-impl ProtoServer for BudgetChat {
+impl StatelessServer for BudgetChat {
     async fn run_server(&self, mut socket: TcpStream) -> anyhow::Result<()> {
         let mut buf = [0; 1024];
         // Read until the client closes the socket

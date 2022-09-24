@@ -1,4 +1,4 @@
-use crate::{write_util, ProtoServer};
+use crate::{write_util, StatelessServer};
 use async_trait::async_trait;
 
 use rusqlite::Connection;
@@ -103,7 +103,7 @@ impl PriceData {
 pub struct MeansToAnEnd;
 
 #[async_trait]
-impl ProtoServer for MeansToAnEnd {
+impl StatelessServer for MeansToAnEnd {
     async fn run_server(&self, mut socket: TcpStream) -> anyhow::Result<()> {
         let (reader, mut writer) = socket.split();
 
